@@ -94,3 +94,34 @@ SELECT *
 FROM dbo.OnlineRetail
 WHERE InvoiceNo = '572861'
 ORDER BY StockCode;
+
+SELECT
+	COUNT(DISTINCT InvoiceNo) AS NumberOfCancelledInvoices,
+	COUNT(*) AS NumberOfCancellationRows,
+	SUM(Quantity*UnitPrice) AS TotalCancellationValue
+FROM dbo.OnlineRetail
+WHERE InvoiceNo LIKE 'C%';
+
+SELECT
+    COUNT(DISTINCT 
+			CASE 
+				WHEN InvoiceNo LIKE 'C%' 
+				THEN InvoiceNo 
+			END) * 100.0
+        / COUNT(DISTINCT InvoiceNo) AS CancellationRate
+FROM dbo.OnlineRetail;
+
+SELECT
+    ABS(
+        SUM(CASE 
+                WHEN InvoiceNo LIKE 'C%' 
+                THEN Quantity * UnitPrice 
+                ELSE 0 
+            END)
+    ) * 100.0
+    / SUM(CASE 
+            WHEN InvoiceNo LIKE 'C%' 
+            THEN 0 
+            ELSE Quantity * UnitPrice 
+        END) AS CancellationValuePctOfNonCancelledValue
+FROM dbo.OnlineRetail;
