@@ -167,3 +167,96 @@ ORDER BY
 	Month ASC;
 
 -- Customer Analysis
+SELECT
+	CustomerID,
+	RevenuePerCustomer,
+	InvoicesPerCustomer,
+	RevenuePerCustomer/InvoicesPerCustomer AS RevenuePerInvoicePerCustomer
+FROM (
+	SELECT
+		CustomerID,
+		SUM(Quantity*UnitPrice) AS RevenuePerCustomer,
+		COUNT(DISTINCT InvoiceNo) AS InvoicesPerCustomer
+	FROM dbo.OnlineRetail
+	WHERE CustomerID IS NOT NULL 
+		AND InvoiceNo NOT LIKE 'C%'
+	GROUP BY CustomerID
+) AS CustomerBreakdown
+ORDER BY RevenuePerInvoicePerCustomer DESC;
+
+SELECT
+InvoicesPerCustomer,
+COUNT(CustomerID) CustomersPerInvoice
+FROM (
+SELECT 
+	CustomerID,
+	COUNT(DISTINCT InvoiceNo) AS InvoicesPerCustomer
+	FROM dbo.OnlineRetail
+	WHERE CustomerID IS NOT NULL 
+		AND InvoiceNo NOT LIKE 'C%'
+	GROUP BY CustomerID
+) AS i
+GROUP BY InvoicesPerCustomer
+ORDER BY InvoicesPerCustomer;
+
+SELECT TOP 10
+	CustomerID,
+	InvoicesPerCustomer,
+	ItemsPurchased,
+	ItemsPurchased*1.0/InvoicesPerCustomer AS ItemsPerInvoicePerCustomer,
+	RevenuePerCustomer,
+	RevenuePerCustomer*1.0/ItemsPurchased AS RevenuePerItemPerCustomer,
+	RevenuePerCustomer*1.0/InvoicesPerCustomer AS RevenuePerInvoicePerCustomer
+FROM (
+	SELECT
+		CustomerID,
+		SUM(Quantity*UnitPrice) AS RevenuePerCustomer,
+		COUNT(DISTINCT InvoiceNo) AS InvoicesPerCustomer,
+		SUM(Quantity) AS ItemsPurchased
+	FROM dbo.OnlineRetail
+	WHERE CustomerID IS NOT NULL 
+		AND InvoiceNo NOT LIKE 'C%'
+	GROUP BY CustomerID
+) AS CustomerBreakdown
+WHERE InvoicesPerCustomer > 20
+ORDER BY RevenuePerInvoicePerCustomer ASC;
+
+--harder case
+SELECT
+	InvoiceGroup,
+	COUNT(*) AS Customers,
+	SUM(RevenuePerCustomer) AS TotalRevenue
+FROM (
+	SELECT
+		CustomerID,
+		RevenuePerCustomer,
+		InvoicesPerCustomer,
+		ItemsPurchased,
+		(CASE 
+			WHEN InvoicesPerCustomer <=5 THEN '1-5'
+			WHEN InvoicesPerCustomer <=10 THEN '6-10'
+			WHEN InvoicesPerCustomer <=20 THEN '11-20'
+			WHEN InvoicesPerCustomer <=50 THEN '21-50'
+			ELSE '50+'
+		END) AS InvoiceGroup,
+		(CASE 
+			WHEN InvoicesPerCustomer <=5 THEN 1
+			WHEN InvoicesPerCustomer <=10 THEN 2
+			WHEN InvoicesPerCustomer <=20 THEN 3
+			WHEN InvoicesPerCustomer <=50 THEN 4
+			ELSE 5
+		END) AS SortOrder
+	FROM (
+		SELECT
+			CustomerID,
+			SUM(Quantity*UnitPrice) AS RevenuePerCustomer,
+			COUNT(DISTINCT InvoiceNo) AS InvoicesPerCustomer,
+			SUM(Quantity) AS ItemsPurchased
+		FROM dbo.OnlineRetail
+		WHERE CustomerID IS NOT NULL 
+			AND InvoiceNo NOT LIKE 'C%'
+		GROUP BY CustomerID
+	) AS CustomerMetrics
+) AS CustomerGroups
+GROUP BY InvoiceGroup, SortOrder
+ORDER BY SortOrder ASC;
