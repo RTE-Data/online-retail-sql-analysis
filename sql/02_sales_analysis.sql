@@ -221,11 +221,17 @@ FROM (
 WHERE InvoicesPerCustomer > 20
 ORDER BY RevenuePerInvoicePerCustomer ASC;
 
---harder case
+-- Invoice Number Group Analysis
 SELECT
 	InvoiceGroup,
 	COUNT(*) AS Customers,
-	SUM(RevenuePerCustomer) AS TotalRevenue
+	SUM(RevenuePerCustomer) AS TotalRevenue,
+	SUM(RevenuePerCustomer)*1.0/COUNT(*) AS RevenuePerCustomer,
+	SUM(ItemsPurchased) AS TotalItems,
+	SUM(InvoicesPerCustomer) AS TotalInvoices,
+	SUM(ItemsPurchased)*1.0/SUM(InvoicesPerCustomer) AS ItemsPerInvoice,
+	SUM(RevenuePerCustomer)*1.0/SUM(ItemsPurchased) AS RevenuePerItem,
+	SUM(InvoicesPerCustomer)*1.0/COUNT(*) AS AvgInvoicesPerCustomer
 FROM (
 	SELECT
 		CustomerID,
